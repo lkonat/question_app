@@ -1,0 +1,12 @@
+<script>
+    $.ajax({
+    type: "POST",
+    url:"get-json",
+    data:{
+      path:'/Users/lassanakonate/Desktop/questions_app/public/deep_learning/file.json'
+    }}).done(function(res) {
+        console.log("res",res);
+    }).fail(function(err) {
+        console.log({err:err});
+    });
+</script>

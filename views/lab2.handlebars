@@ -1,0 +1,103 @@
+<script src="Bot.js"></script>
+<script src="SvgDrawer.js"></script>
+<script src="SvgCoolCircle.js"></script>
+<script type="text/javascript">
+let svg = $(`<svg style='position:absolute; top:0px; left:0px; width:100%; height:100%; background-color:transparent;z-index:2;pointer-events: none;'>
+<defs>
+    <filter id="dropshadow" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+     <feComponentTransfer in="SourceAlpha">
+         <feFuncR type="discrete" tableValues="1"/>
+         <feFuncG type="discrete" tableValues="0"/>
+         <feFuncB type="discrete" tableValues="0"/>
+     </feComponentTransfer>
+     <feGaussianBlur stdDeviation="3"/>
+     <feOffset dx="0" dy="0" result="shadow"/>
+     <feComposite in="SourceGraphic" in2="shadow" operator="over"/>
+   </filter>
+
+       <filter id="dropshadow2" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+     <feComponentTransfer in="SourceAlpha">
+         <feFuncR type="discrete" tableValues="1"/>
+         <feFuncG type="discrete" tableValues="1"/>
+         <feFuncB type="discrete" tableValues="1"/>
+     </feComponentTransfer>
+     <feGaussianBlur stdDeviation="30"/>
+     <feOffset dx="0" dy="0" result="shadow"/>
+     <feComposite in="SourceGraphic" in2="shadow" operator="over"/>
+   </filter>
+  </defs>
+  </svg>`);
+$("body").append(svg);
+let main = $(`<div style='width:${window.innerWidth}px; height:${window.innerHeight}px; z-index:1;background-image: linear-gradient(black,rgb(8,10,10),rgb(5,7,7));'></div>`);
+$("body").append(main);
+    const actor =  new SvgDrawer({
+        svg:svg[0]
+    });
+      let color =`red`;
+      let width = '5px';
+      let radius = 50;
+    let color2 =`darkred`;
+      let width2 = '7px';
+      let circles = [
+             new SvgCoolCircle({svg:svg[0],x:150, y:500, r:radius, start:0, end:90,fill:'none',stroke:color,strokeWidth:width,speed:700}),
+             new SvgCoolCircle({svg:svg[0],x:150, y:500, r:radius, start:120, end:180,fill:'none',stroke:color,strokeWidth:width,speed:1000}),
+             new SvgCoolCircle({svg:svg[0],x:150, y:500, r:radius, start:200, end:230,fill:'none',stroke:color,strokeWidth:width,speed:1000}),
+             new SvgCoolCircle({svg:svg[0],x:150, y:500, r:radius, start:260, end:290,fill:'none',stroke:color,strokeWidth:width,speed:1000}),
+             new SvgCoolCircle({svg:svg[0],x:150, y:500, r:radius, start:320, end:350,fill:'none',stroke:color,strokeWidth:width,speed:1000}),
+
+             new SvgCoolCircle({svg:svg[0],x:150, y:500, r:(radius-20), start:0, end:90,fill:'none',stroke:color2,strokeWidth:width2,speed:700}),
+             new SvgCoolCircle({svg:svg[0],x:150, y:500, r:(radius-20), start:140, end:160,fill:'none',stroke:color2,strokeWidth:width2,speed:1000}),
+             new SvgCoolCircle({svg:svg[0],x:150, y:500, r:(radius-20), start:200, end:220,fill:'none',stroke:color2,strokeWidth:width2,speed:1000}),
+             new SvgCoolCircle({svg:svg[0],x:150, y:500, r:(radius-20), start:270, end:290,fill:'none',stroke:color2,strokeWidth:width2,speed:1000}),
+             new SvgCoolCircle({svg:svg[0],x:150, y:500, r:(radius-20), start:310, end:340,fill:'none',stroke:color2,strokeWidth:width2,speed:1000})
+      ];
+      let wx = window.innerWidth/2;
+      let color22 =`steelblue`;
+      let radius2 = 100;
+            let circles2 = [
+             new SvgCoolCircle({svg:svg[0],x:wx, y:500, r:radius2, start:0, end:90,fill:'none',stroke:color22,strokeWidth:width,speed:700,filter_id:"url(#dropshadow2)"}),
+             new SvgCoolCircle({svg:svg[0],x:wx, y:500, r:radius2, start:120, end:180,fill:'none',stroke:color22,strokeWidth:width,speed:1000,filter_id:"url(#dropshadow2)"}),
+             new SvgCoolCircle({svg:svg[0],x:wx, y:500, r:radius2, start:200, end:230,fill:'none',stroke:color22,strokeWidth:width,speed:1000,filter_id:"url(#dropshadow2)"}),
+             new SvgCoolCircle({svg:svg[0],x:wx, y:500, r:radius2, start:260, end:290,fill:'none',stroke:color22,strokeWidth:width,speed:1000,filter_id:"url(#dropshadow2)"}),
+             new SvgCoolCircle({svg:svg[0],x:wx, y:500, r:radius2, start:320, end:350,fill:'none',stroke:color22,strokeWidth:width,speed:1000,filter_id:"url(#dropshadow2)"}),
+             
+             new SvgCoolCircle({svg:svg[0],x:wx, y:500, r:(radius2-20), start:0, end:90,fill:'none',stroke:color22,strokeWidth:width2,speed:700,filter_id:"url(#dropshadow2)"}),
+             new SvgCoolCircle({svg:svg[0],x:wx, y:500, r:(radius2-20), start:140, end:160,fill:'none',stroke:color22,strokeWidth:width2,speed:1000,filter_id:"url(#dropshadow2)"}),
+             new SvgCoolCircle({svg:svg[0],x:wx, y:500, r:(radius2-20), start:200, end:220,fill:'none',stroke:color22,strokeWidth:width2,speed:1000,filter_id:"url(#dropshadow2)"}),
+             new SvgCoolCircle({svg:svg[0],x:wx, y:500, r:(radius2-20), start:270, end:290,fill:'none',stroke:color22,strokeWidth:width2,speed:1000,filter_id:"url(#dropshadow2)"}),
+             new SvgCoolCircle({svg:svg[0],x:wx, y:500, r:(radius2-20), start:310, end:340,fill:'none',stroke:color22,strokeWidth:width2,speed:1000,filter_id:"url(#dropshadow2)"})
+      ];
+
+      $("body").on("resize",()=>{
+          main.css({
+              'width':window.innerWidth,
+              "height":window.innerHeight
+          });
+      });
+      main.click((e)=>{
+        actor.mouseClick(e);
+          e.stopPropagation();
+          
+          let x = e.clientX;
+          let y = e.clientY;
+          for(let i =0; i< circles.length; i++){
+             circles[i].move(x,y);
+          }
+          {{!-- for(let i =0; i< circles.length; i++){
+             circles2[i].move(x,y);
+          } --}}
+          console.log(x,y);
+      });
+      main.on('mousemove',(e)=>{
+          actor.mousemove(e);
+      });
+
+      main.on('mouseup',(e)=>{
+          actor.mouseup(e);
+      });
+
+      main.on('mousedown',(e)=>{
+          actor.mousedown(e);
+      });
+
+</script>

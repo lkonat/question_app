@@ -1,0 +1,9 @@
+
+#node_modules
+node_modules
+#database dir
+database
+#any db file
+*.db
+*.db-shm
+*.db-wal

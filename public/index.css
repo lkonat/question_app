@@ -1,0 +1,29 @@
+.quizLinks{
+
+}
+.quizLinks:hover{
+    background-color: rgba(10,10,10,0.5)
+}
+.fk_highlight{
+  background-color:rgb(232, 235, 52,0.5);
+  color:black;
+}
+
+.fk_table_highlight{
+    background-color:coral;
+}
+.sqlite_table{
+display:flex; 
+flex-direction:column; 
+background-color:rgb(8,10,10); 
+color:grey;
+box-shadow: 0 0 5px steelblue;
+}
+.table_columns{
+color:grey;
+cursor: pointer;
+}
+.table_columns:hover{
+color:white;
+background-color: rgba(100,100,100,0.5);
+}
