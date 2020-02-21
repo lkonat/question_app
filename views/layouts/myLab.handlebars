@@ -41,7 +41,7 @@
            constructor(args){
                this.host = args.host;
                this.items = {};
-               this.item_list = [{name:'Home',is_active:true},{name:'Features'}];
+               this.item_list = [{name:'Worspace',is_active:false,href:'work-space'},{name:'Features'}];
                this.nav = $(`<nav class="navbar navbar-expand-lg navbar-dark bg-dark" ></nav>`);
                this.host.append(this.nav);
                this.icon = $(`<a class="navbar-brand" href="room" >Awa</a>`);
@@ -56,7 +56,7 @@
            }
            add_nav_itme(args){
                let item_li = $(`<li class="nav-item ${args.is_active?'active':''}"></li>`);
-               this.items[args.name] = $(`<a class="nav-link" href="#">${args.name} ${args.is_active?'<span class="sr-only">(current)</span>':''}</a>`);
+               this.items[args.name] = $(`<a class="nav-link" href="${args.href?args.href:"#"}">${args.name} ${args.is_active?'<span class="sr-only">(current)</span>':''}</a>`);
                item_li.append(this.items[args.name]);
                this.ul.append(item_li);
            }

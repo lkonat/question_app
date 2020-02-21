@@ -1,0 +1,515 @@
+<script>
+    socket.on('wacther',(message)=>{
+        console.log("wacther",message);
+    });
+
+console.log("hello workspace");
+
+     //test hello
+           {{!-- $.ajax({
+            type: "POST",
+            url:"browse",
+            data:{
+                path:`/Users/lassanakonate/Desktop/questions_app`,
+            }
+            }).done(function(res) {
+              console.log(res);
+          }).fail(function(err) {
+              console.log({err:err});
+          }); --}}
+
+        $.ajax({
+            type: "POST",
+            url:"watch",
+            data:{
+                directory:`/Users/lassanakonate/Desktop/questions_app`,
+            }
+            }).done(function(res) {
+              console.log("watch",res);
+          }).fail(function(err) {
+              console.log("watch",{err:err});
+          });
+class CoolContextMenu{
+    constructor(){
+       this.host = $('body');
+    }
+    getView(args){
+        if(this.view){
+           this.view.remove();
+        }
+        this.view = $(`<div style='min-width:200px;min-height:200px; max-height:400px;overflow:scroll;position:fixed; top:${args.top}px; left:${args.left}px;padding:3px;box-shadow: 0 0 5px black;background-color:rgb(18,20,20); color:grey;font-family: "Times New Roman", Times, serif;'></div>`);
+        this.host.append(this.view);
+        this.view.click((e)=>{
+            e.stopPropagation();
+            this.view.remove();
+            this.view = false;
+        });
+        return this;
+    }
+    addSection(args){
+      let section = $(`<div style='width:100%; ${args.on_click?"color:grey;cursor:pointer;":"color:rgb(28,30,30);"} background-color:rgb(5,10,10); margin-top:3px;'><center>${args.name}</center></div>`);
+      this.view.append(section);
+      if(args.on_click){
+        section.click((e)=>{
+            //e.stopPropagation();
+            args.on_click();
+        });
+      }
+    }
+}
+
+window.custome_context_menu = new CoolContextMenu();
+class DirBrowserItem{
+    constructor(args){
+      this.full_path = args.full_path;
+      this.data=args.data;
+      this.host = args.host;
+      this.id = args.id;
+      this.name = args.name;
+      this.size = args.size;
+      this.height = '30px';
+      this.item_type = this.getFileType();
+    }
+        on(what,that){
+        if(!this.cEvents){
+            this.cEvents = {}; 
+        }
+        this.cEvents[what] = that;
+    }
+    fireEvent(what,args){
+        if(this.cEvents && this.cEvents[what]){
+            this.cEvents[what](args);
+        }
+    }
+    getFileType(){
+        if(this.data.type ==="dir"){
+            return "dir";
+        }else if(this.data.type ==="file"){
+           if(this.data.name.endsWith(".js")){
+             return "js";
+           }else if(this.data.name.endsWith(".txt")){
+             return "txt";
+           }else if(this.data.name.endsWith(".json")){
+             return "json";
+           }else if(this.data.name.endsWith(".csv")){
+             return "csv";
+           }else if(this.data.name.endsWith(".py")){
+             return "py";
+           }else if(this.data.name.endsWith(".db")){
+             return "db";
+           }else{
+               return "x-file";
+           }
+        }else{
+           return "x-type";
+        }
+    }
+    roundDecimal(number,decimalPlace){
+      let data = number;
+      if (typeof data === "number"){
+        if (data % 1 != 0){ //if decimal number
+           data = data.toFixed(decimalPlace);
+        }
+      }
+      return data;
+    }
+    getDateStrFromTs(ts, dte) {
+        let months_list = [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "June",
+            "July",
+            "Aug",
+            "Sept",
+            "Oct",
+            "Nov",
+            "Dec"
+        ];
+        let days_list = [
+            "Sunday",
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday"
+        ];
+        let date_curr = new Date();
+        date_curr.setTime(ts);
+        try {
+            let d = date_curr;
+            if (dte) {
+            if (dte === "formatAMPM") {
+                return formatAMPMTs(d);
+            } else {
+                return (
+                days_list[d.getDay()] +
+                " " +
+                months_list[d.getMonth()] +
+                " " +
+                d.getDate() +
+                " " +
+                d.getFullYear()
+                );
+            }
+            } else {
+            return (
+                months_list[d.getMonth()] +
+                " " +
+                d.getDate() +
+                " " +
+                d.getFullYear() +
+                " at " +
+                formatAMPMTs(d)
+            );
+            }
+        } catch (e) {
+            alert(e);
+            return "";
+        }
+        function formatAMPMTs(date) {
+            let hours = date.getHours();
+            let minutes = date.getMinutes();
+            let seconds = date.getSeconds();
+            let ampm = hours >= 12 ? "PM" : "AM";
+            hours = hours % 12;
+            hours = hours ? hours : 12; // the hour '0' should be '12'
+            minutes = minutes < 10 ? "0" + minutes : minutes;
+            let strTime = hours + ":" + minutes + " " + ampm;
+            return strTime;
+        }
+    };
+    convertSize(sizeInBytes) {
+        if (sizeInBytes > 1000 && sizeInBytes < 1000000) {
+            return this.roundDecimal(sizeInBytes / 1000, 0) + `KB`;
+        } else if (sizeInBytes < 1000) {
+            return this.roundDecimal(sizeInBytes, 0) + `bytes`;
+        } else if (sizeInBytes > 1000000) {
+            return this.roundDecimal(sizeInBytes / 1000000, 0) + `MB`;
+        } else if (sizeInBytes > 1000000000) {
+            return this.roundDecimal(sizeInBytes / 1000000000, 0) + `GB`;
+        }
+    }
+    clicked(args){
+         console.log(this);
+         if(this.item_type ==="dir"){
+            this.fireEvent("dir",{path:this.data.full_path,elt:this});
+         }else{
+           this.fireEvent("file",{path:this.data.full_path,elt:this});
+         }
+    }
+    setIcon(){
+        if(this.item_type ==="dir"){
+           this.icon_view.html(`<i class="fa fa-folder" aria-hidden="true"></i>`);
+        }else if(this.item_type ==="x-file"){
+           this.icon_view.html(`<i class="fa fa-file-o" style="color:red"></i>`);
+        }
+        else if(this.item_type ==="js"){
+            this.icon_view.html(`<i style='color:coral;'>JS</i>`);
+        }
+        else if(this.item_type ==="txt"){
+            this.icon_view.html(`<i style='color:coral;'>tt</i>`);
+        }else if(this.item_type ==="csv"){
+             this.icon_view.html(`<i style='color:coral;'>CV</i>`);
+        }else if(this.item_type ==="py"){
+            this.icon_view.html(`<i style='color:coral;'>PY</i>`);
+        }
+        else if(this.item_type ==="db"){
+             this.icon_view.html(`<i style='color:coral;'>DB</i>`);
+        }else if(this.item_type ==="x-type"){
+           this.icon_view.html(`...`);
+        }
+        else if(this.item_type ==="json"){
+           this.icon_view.html(`<i style='color:steelblue;'>JN</i>`);
+        }else{
+            this.icon_view.html(`<i style='color:steelblue;'>**</i>`);
+        }
+    }
+    removeWindowSelection(){
+        if(window.getSelection) {
+                if (window.getSelection().empty) {  // Chrome
+                    window.getSelection().empty();
+                } else if (window.getSelection().removeAllRanges) {  // Firefox
+                    window.getSelection().removeAllRanges();
+                }
+        }else if (document.selection) {  // IE?
+            document.selection.empty();
+        }
+    }
+    initView(){
+       this.view = $(`<tr style='border:none;color:grey;border-bottom:1px solid rgb(18,20,20);white-space:nowrap;'></tr>`);
+       this.icon_view = $(`<td style='border:none; color:inherit;cursor:pointer;padding:3px;'></td>`);
+       this.title_view = $(`<td style='border:none;color:inherit;cursor:pointer;padding:3px;'>${this.name}</td>`);
+       this.size_view = $(`<td style='border:none;color:inherit;padding:3px;'>${this.convertSize(this.size)}</td>`);
+       this.date_view = $(`<td style='border:none;color:inherit;padding:3px;'>${this.getDateStrFromTs(this.data.modified,false)}</td>`);
+       this.title_view.click((e)=>{
+         e.stopPropagation();
+         this.clicked({target:'title'});
+       });
+      this.title_view.contextmenu((e)=>{
+            e.stopPropagation();
+            e.preventDefault();
+            console.log(window.getSelection());
+            this.removeWindowSelection();
+            let a_view = window.custome_context_menu.getView({top:e.clientY, left:e.clientX});
+            a_view.addSection({
+                name:"Watch File",
+                on_click:()=>{
+                    console.log("watch file", this.name);
+                }
+            });
+            a_view.addSection({
+                name:"what"
+            });
+       });
+       this.view.append(this.icon_view,this.title_view,this.size_view,this.date_view);
+       this.setIcon();
+    }
+    appendSelf(args,callBack){
+        if(this.view){
+          this.view.remove();
+        }
+        this.initView();
+        this.host.append(this.view);
+        return callBack();
+    }
+}
+class DirBrowser{
+    constructor(args){
+     this.host = $("body");
+     this.width = "700px";
+     this.height = "300px";
+     this.starting_path = `/Users/lassanakonate/Desktop/questions_app/node_modules`;
+     this.current_items = {};
+     this.current_path = false;
+     this.current_fronts = [];
+     this.initView();
+     this.navigateToPath({path:this.starting_path},(path)=>{
+            if(path){
+                this.current_path = path;
+            }
+         
+     });
+    }
+    setTitle(path){
+        let temp = path.split("/");
+        this.window_title.html(temp[temp.length-1]);
+    }
+    goFront(){
+       if(this.current_fronts.length>0){
+         let now_path = this.current_fronts.pop();
+         this.navigateToPath({path:now_path},(path)=>{
+           if(path){
+                this.current_path = path;
+            }
+       });
+       }
+       if(this.current_fronts.length<=0){
+          this.resetFront();
+       }
+       console.log("this.current_fronts",this.current_fronts);
+    }
+    goBack(){
+       let temp = this.current_path.split("/");
+       let new_path = false;
+       for(let i =0; i< temp.length-1; i++){
+           if(temp[i].trim().length>0){
+           if(!new_path){
+              new_path = `/${temp[i]}`;
+           }else{
+              new_path=`${new_path}/${temp[i]}`;
+           }
+           }
+       }
+       this.navigateToPath({path:new_path},(path)=>{
+           if(path){
+                this.current_fronts.push(this.current_path);
+                this.front_btn.css({color:"grey"});
+                this.current_path = path;
+            }
+       });
+    }
+    on(what,that){
+        if(!this.cEvents){
+            this.cEvents = {}; 
+        }
+        this.cEvents[what] = that;
+    }
+    makeid() {
+        var text = "";
+        var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        for (var i = 0; i < 5; i++) {
+            text += possible.charAt(Math.floor(Math.random() * possible.length));
+        }
+        return new Date().getTime()+"I"+text;
+    }
+    fireEvent(what,args){
+        if(this.cEvents && this.cEvents[what]){
+            this.cEvents[what](args);
+        }
+    }
+    resetFront(){
+        this.current_fronts = []; //reset the current front
+        this.front_btn.css({color:"black"});
+    }
+    addOneItem(args,callBack){
+        let id = this.makeid();
+        let item = new DirBrowserItem({host:this.right_content_table,data:args.data,id:id,size:args.data.size,full_path:args.full_path,name:args.data.name}); 
+        item.appendSelf(false,()=>{
+            return callBack();
+        });
+        item.on("dir",(info)=>{
+             console.log("will navigate to path", info);
+             //console.log();
+            this.navigateToPath({path:info.path},(path)=>{
+                if(path){
+                    console.log("did navigate to path", path);
+                    this.resetFront();
+                    this.current_path = path;
+                }
+            });
+        });
+        item.on("file",()=>{
+            
+        });
+        this.current_items[id] = item;
+    }
+    navigateToPath(args,callBack){
+       this.getDirContent({path:args.path},(content)=>{
+           //display content if anny;
+           if(content && content.length>0){
+             this.clearDirSpaceView();
+             for(let i =0; i< content.length; i++){
+                this.addOneItem({
+                    data:content[i],
+                    full_path:`${args.path}/${content[i].name}`,
+                },()=>{});
+             }
+             this.setTitle(args.path);
+             return callBack(args.path);
+           }
+       });
+    }
+    getDirContent(args,callBack){
+        $.ajax({
+            type: "POST",
+            url:"browse",
+            contentType: 'application/json; charset=UTF-8',
+            data:JSON.stringify({
+                path:args.path
+            })
+            }).done(function(res) {
+              return callBack(res);
+          }).fail(function(err) {
+              return callBack({err:err});
+          });
+    }
+    getTheme(target){
+      if(target==="background-color"){
+        return "rgb(8,10,10)";
+      }else if(target==="color"){
+         return "grey";
+      }
+    }
+    clearDirSpaceView(){
+       this.right_content_table.empty();
+       this.right_content_table.append(`<tr style='color:grey; background-color:rgb(18,20,20);'><th style='color:inherit;position:sticky; top:0px;background-color:inherit;'></th><th style='color:inherit;position:sticky; top:0px;background-color:inherit;'>Name</th><th style='color:inherit;position:sticky; top:0px;background-color:inherit;'>Size</th><th style='color:inherit;position:sticky; top:0px;background-color:inherit;'>Date</th></tr>`);
+    }
+    clearLeftSpaceView(){
+       this.left_content.empty();
+    }
+    initView(){
+        this.view = $(`<div style=' position:fixed; top:${this.top}; left:${this.left};box-shadow: 0 0 5px grey;background-color:${this.getTheme("background-color")}; color:${this.getTheme("color")};display:flex; flex-direction:column;font-family: "Times New Roman", Times, serif;overflow:hidden;'></div>`);
+        this.host.append(this.view);
+        //section 0
+        this.div0 = $(`<div class="dragg_area" style='width:100%;'></div>`);
+        this.window_title = $(`<center class="dragg_area" style='font-weight:bold;'>Browser</center>`);
+        this.div0.append(this.window_title);
+        this.nav_area = $(`<div style='width:100%;text-align:right;padding:3px;'></div>`);
+        this.prev_btn = $(`<a href='javascript:' style='color:grey;cursor:pointer;'> Prev</a>`);
+        this.front_btn = $(`<a href='javascript:' style='color:grey;cursor:pointer;'> Next</a>`);
+        this.nav_area.append(this.prev_btn,this.front_btn);
+        this.div0.append(this.nav_area);
+        this.view.append(this.div0);
+        //section 1
+        this.div1 = $(`<div style='width:100%;height:100%; display:flex; flex-direction:row;'></div>`);
+        this.left = $(`<div style='width:200px;height:100%; border-right:1px solid rgb(5,40,40);'><center>Left</center></div>`);
+        this.left_content = $(`<div style='width:100%; height:100%;background-color:rgb(5,7,7); overflow:scroll; '>sss</div>`);
+        this.left.append(this.left_content);
+        this.right = $(`<div style='width:${this.width};height:${this.height};background-color:rgb(5,7,7);color:grey;'></div>`);
+        this.right_content = $(`<div style='width:100%; height:100%;'></div>`);
+        this.right.append(this.right_content);
+        this.right_content_view_port = $(`<div style='width:100%; height:100%; overflow:scroll;'></div>`);
+        this.right_content.append(this.right_content_view_port);
+        this.right_content_table = $(`<table style='width:100%;'></table>`);
+        this.right_content_view_port.append(this.right_content_table);
+    
+        this.div1.append(this.left,this.right);
+        this.view.append(this.div1);
+
+         //section 2
+        this.div2 = $(`<div class="dragg_area" style='width:100%;'><center class="dragg_area" style='font-weight:bold;'>Footer</center></div>`);
+        this.view.append(this.div2);
+
+        this.makeItDraggleWIthClassName({elt:this.view, className:"dragg_area",color:"steelblue"});
+        this.right.resizable();
+        this.resetFront();
+        this.prev_btn.click(()=>{
+            this.goBack();
+        });
+        this.front_btn.click(()=>{
+            this.goFront();
+        });
+    }
+    makeItDraggleWIthClassName(args){
+        if(args.elt && args.className){
+            args.elt.addClass("oModal");
+            args.elt.find(`.${args.className}`).css({"cursor":"grab"});
+          // elt[0].addEventListener('touchstart', function(){
+          //   alert("tap");
+          // }, false);
+          args.elt[0].addEventListener('touchmove', function(e){
+            if(e.target.className ===args.className || $(e.target).hasClass(args.className)){
+                args.elt.draggable( "option", "disabled",false);
+            }else {
+                args.elt.draggable( "option", "disabled",true);
+            }
+          }, false);
+          args.elt.on("mousedown",function(e){
+              if(e.target.className ===args.className || $(e.target).hasClass(args.className)){
+                args.elt.draggable( "option", "disabled",false);
+              }else {
+                args.elt.draggable( "option", "disabled",true);
+              }
+          });
+          args.elt.draggable({
+            stack: ".oModal",
+            drag: function( event, ui ) {
+                let factor = args.elt.width();
+              if((ui.position.left + factor) >=$('body').width()-100){
+                //ui.position.left = $('body').width() -factor;
+              }
+              if(ui.position.left<0){
+                ui.position.left =0;
+              }
+              if(ui.position.top<0){
+                //ui.position.top =0;
+              }
+              if((ui.position.top + 100) >=$('body').height()){
+                //ui.position.top = $('body').height() -100;
+              }
+              $(ui.helper[0]).css({border:`2px solid ${args.color?args.color:'white'}`});
+            }
+            ,
+             stop: function( event, ui ) {
+               $(ui.helper[0]).css({border:"none"});
+             }
+          });
+        }
+      }
+}
+let browser = new DirBrowser();
+</script>
