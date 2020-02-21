@@ -1,0 +1,20 @@
+<script src="PivotTableBuilder.js"></script>
+<script>
+    let display_area = $(`<div style='width:100%;'></div>`);
+    $("body").append(display_area);
+    window.pivotTableBuilder = new PivotTableBuilder({
+        host:$("body"),
+        show_on:display_area
+    });
+    let data = [
+            ["days","calori burns",	"sleep quality","number of meals"],
+            ["Monday",200,"good",3],
+            ["Tuesday",	300,"bad",4],
+            ["Wednesday",100,"medium",1],
+            ["Thursday",50,	"angry",2],
+            ["Friday",600,"sad",0],
+            ["Saturday",1000,"good",1],
+            ["Sunday",0,"okay",	2]
+    ];
+    window.pivotTableBuilder.initWithData({data:data});
+</script>

@@ -86,6 +86,9 @@ app.get('/learning', function(req, res) {
 app.get('/room', function(req, res) {
   res.render('myLabMain', {layout: 'myLab'});
 });
+app.get('/room/home', function(req, res) {
+  res.render('myLabMain', {layout: 'myLab'});
+});
 // app.get('/backend', function(req, res) {
 //    res.render('home', {layout: 'backend'});
 // });

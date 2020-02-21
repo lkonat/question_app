@@ -118,7 +118,6 @@ class QuestionControler {
       this.animation_div.html('');
         if(args.questions[args.idx]){
           this.askOne(args.questions[args.idx],(obj)=>{
-            console.log("done one",obj);
             let outcomes= args.outcomes?args.outcomes:[];
             outcomes.push(obj);
             this.askQuestions({
