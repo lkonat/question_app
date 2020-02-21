@@ -30,6 +30,59 @@ const fs = require("fs");
 //   }
 // }
 
+//watcher starts
+class Watcher{
+  constructor(){
+    this.watcher = false;
+    this.watchers = {};
+  }
+  on(what,that){
+   if(!this.int_events){this.int_events = {};}
+   this.int_events[what] = that;
+  }
+  fireEvent(what,args){
+    if(!this.int_events){this.int_events = {};}
+    if(this.int_events[what]){
+      this.int_events[what](args);
+    }
+  }
+  stop(args){
+    if(args.dir && this.watchers[args.dir]){
+      this.watchers[args.dir].close();
+      delete this.watchers[args.dir];
+      this.fireEvent("stop",{dir:args.dir});
+    }else if(args.all){
+      for(let elt in this.watchers){
+        this.watchers[elt].close();
+        delete this.watchers[elt];
+      }
+      this.fireEvent("stop",{all:true});
+    }
+  } 
+  watch(args){
+    let dir = args.directory;
+    if(args.only){
+      this.stop({all:true});
+    }else{
+      this.stop({dir:dir});
+    }
+    this.watchers[dir] = fs.watch(dir,{recursive:true} ,(eventType, filename) => {
+      if (filename) {
+        this.fireEvent("notice",{
+          filename:filename, 
+          full_path:`${__dirname}/${filename}`,
+          eventType:eventType,
+          dir:dir
+        });
+      }
+    });
+  }
+}
+// watcher.watch({
+//   directory:'/Users/lassanakonate/Desktop/questions_app'
+// });
+
+//watcher ends
 const quizz_database = require('./public/databaseControler.js').controler;
 quizz_database.load("./public/quizzes.db",function(db){
   if(db){
@@ -86,8 +139,8 @@ app.get('/learning', function(req, res) {
 app.get('/room', function(req, res) {
   res.render('myLabMain', {layout: 'myLab'});
 });
-app.get('/room/home', function(req, res) {
-  res.render('myLabMain', {layout: 'myLab'});
+app.get('/work-space', function(req, res) {
+  res.render('workspace', {layout: 'myLab'});
 });
 // app.get('/backend', function(req, res) {
 //    res.render('home', {layout: 'backend'});
@@ -160,6 +213,28 @@ app.post("/get-one-quiz",function(req,res){
     res.send(outcome);
   });
 });
+
+app.post("/watch",function(req,res){ 
+  let dir = req.body.directory;
+  let stopAll = req.body.stop;
+  let started = false;
+  try {
+    watcher.watch({
+      only:stopAll?true:false,
+      directory:dir
+    });
+    started = true;
+  } catch (error) {
+    console.log("watcher Error",error);
+    started = false;
+  }
+  if(started){
+    res.send({ok:true});
+  }else{
+    res.send({ok:false,err:true});
+  }
+});
+
 app.post("/get-one-question",function(req,res){ 
   let question_id = req.body.question_id;
   quizz_database.getOneQuestion({
@@ -226,19 +301,169 @@ app.post("/run-query",function(req,res){
     }
   });
 });
-
+function getFileStats(param, callBack) {
+  fs.stat(param.path, function(err, stats) {
+    if (err) {
+      callBack({ ok: false, err: err });
+    }
+    callBack({ ok: true, stats: stats, name: param.name }); // console.log(stats);
+  });
+}
+function getFiles(dir, cb) {
+  fs.readdir(dir, function(err, items) {
+    if (err) {
+      cb(err, null);
+      return;
+    }
+    if (!items.length) {
+      cb(null, []);
+    } else {
+      var files = [];
+      var cnt = 0;
+      for (var i = 0; i < items.length; i++) {
+        (function(i) {
+          fs.stat(dir + "/" + items[i], function(err, stat) {
+            if (err && cb) {
+              cb(err, null);
+              cb = null;
+              return;
+            }
+            if (stat.isFile()) {
+              files.push({
+                name:items[i],
+                full_path:dir + "/" + items[i], 
+                type:"file",
+                accessed: stat.atime.getTime(),
+                modified: stat.mtime.getTime(),
+                created: stat.ctime.getTime(),
+                size: stat.size
+              });
+            }
+            cnt++;
+            if (cnt === items.length) {
+              files.sort();
+              cb(null, files);
+            }
+          });
+        })(i);
+      }
+    }
+  });
+}
+function getDirs(dir, cb) {
+  fs.readdir(dir, function(err, items) {
+    if (err) {
+      cb(err, null);
+      return;
+    }
+    if (!items.length) {
+      cb(null, []);
+    } else {
+      var dirs = [];
+      var cnt = 0;
+      for (var i = 0; i < items.length; i++) {
+        (function(i) {
+          fs.stat(dir + "/" + items[i], function(err, stat) {
+            if (err && cb) {
+              cb(err, null);
+              cb = null;
+              return;
+            }
+            if (stat.isDirectory()) {
+              dirs.push({
+                name:items[i],
+                full_path:dir + "/" + items[i],
+                type:"dir",
+                accessed: stat.atime.getTime(),
+                modified: stat.mtime.getTime(),
+                created: stat.ctime.getTime(),
+                size: stat.size
+              });
+            }
+            cnt++;
+            if (cnt === items.length) {
+              dirs.sort();
+              cb(null, dirs);
+            }
+          });
+        })(i);
+      }
+    }
+  });
+}
+app.post("/browse", function(req, res) {
+  try {
+    let path = req.body.path,allfiles = [],chosens = [];
+    console.log("path0",path);
+      if(!path){
+        res.send(false);
+        return false;
+      }
+      path = path.trim().replace("/","");
+      if(path.length<=0){
+        console.log("ERRRE");
+        res.send(false);
+        return false;
+      }
+      path= `/${path}`;
+      console.log("path",path);
+      getDirs(path, function(err, dirs) {
+        //get the directories
+        if (err) {
+          res.send(false);
+        } else {
+          allfiles = allfiles.concat(dirs);
+          getFiles(path, function(err, files) {
+            //get files
+            if (err) {
+              res.send(false);
+            } else {
+              allfiles = allfiles.concat(files);
+              for (var i = 0; i < allfiles.length; i++) {
+                if (!allfiles[i].name.startsWith(".")) {
+                  chosens.push(allfiles[i]);
+                }
+              }
+              res.send(chosens);
+            }
+          });
+        }
+      });
+  } catch (e) {
+    console.log(e);
+    res.send(false);
+  }
+});
 //section Error
 app.use(function(req, res){
   res.status(404);
   res.render("404");
 });
 //custom 500 page
-app.use(function(err, req, res, next){
+app.use((err, req, res, next)=>{
   console.log("Err stack: ",err.stack);
   res.status(500);
   res.render("500");
 });
-
-server.listen(app.get("port"), function(){
-  console.log("Express started on port "+app.get("port"));
+const watcher = new Watcher();
+watcher.on("stop",(args)=>{
+  console.log("watcher","stopped",args);
+  io.sockets.emit('wacther',{type:"stop",message:args});
 });
+watcher.on("notice",(activity)=>{
+  console.log("activity",activity);
+  io.sockets.emit('wacther',{type:"activity",message:activity});
+});
+server.listen(app.get("port"),()=>{
+  console.log("Express started on port "+app.get("port"));
+
+});
+// fs.watch('/Users/lassanakonate/Desktop/questions_app',{recursive:true} ,(eventType, filename) => {
+//   console.log(`event type is: ${eventType}`);
+//   if (filename) {
+//     console.log(`filename provided:${__dirname}/${filename}`);
+//   }else {
+//     console.log('filename not provided why');
+//   }
+// });
+
