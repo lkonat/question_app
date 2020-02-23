@@ -4,6 +4,7 @@ const path = require('path');
 const bodyParser = require('body-parser');
 const sqlite3 = require('sqlite3').verbose();
 const app = express();
+const child_process = require("child_process");
 const server = http.createServer(app);
 const io = require('socket.io').listen(server);
 const fs = require("fs");
@@ -29,7 +30,56 @@ const fs = require("fs");
 //     return false;
 //   }
 // }
+//db
+const file_task_db = require("./public/workspace_dir/FileDBControler.js").controler;
+file_task_db.load("./database/file_task.db", function(db) {
+  if (db) {
+    file_task_db.prepare({ create:true}).then(good => {
+      if (good) {
+        console.log("file_task_db ready");
+        // file_task_db.getAllTasks().then((outcome)=>{
+        //   console.log("getAllTasks",outcome);
+        // });
+        // file_task_db.getTaskForFile({file_path:`/Users/lassanakonate/Desktop/questions_app/views/workspace.handlebars`}).then((outcome)=>{
+        //  console.log("getTaskForFile",outcome);
+        // });
 
+        file_task_db.getAllPaths().then((outcome)=>{
+         /// console.log("getAllPaths",outcome);
+          if(outcome.ok){
+            for(let i =0; i<outcome.ok.length; i++){
+              let file_path = outcome.ok[i].file_path;
+              let dir = file_path.replace(outcome.ok[i].file_name,"");
+              watcher.watch({
+                only:false,
+                directory:dir
+              });
+            }
+          }
+       });
+        // file_task_db.addFile({
+        //   file_path: ,
+        //   file_name:,
+        //   directory:
+        // }).then((outcome)=>{
+      
+        // });
+        // file_task_db.addTask({
+        //   task_type: ,
+        //   file_path:,
+        //   source_path:,
+        //   destination_path:
+        // }).then((outcome)=>{
+      
+        // });
+      }
+    }).catch(err => {
+        console.log("could not load file_task_db", err);
+    });
+  } else {
+    console.log("could not load file_task_db");
+  }
+});
 //watcher starts
 class Watcher{
   constructor(){
@@ -66,11 +116,12 @@ class Watcher{
     }else{
       this.stop({dir:dir});
     }
+    console.log("watching",dir);
     this.watchers[dir] = fs.watch(dir,{recursive:true} ,(eventType, filename) => {
       if (filename) {
         this.fireEvent("notice",{
           filename:filename, 
-          full_path:`${__dirname}/${filename}`,
+          full_path:`${dir}${filename}`,
           eventType:eventType,
           dir:dir
         });
@@ -243,6 +294,20 @@ app.post("/get-one-question",function(req,res){
     res.send(outcome);
   });
 });
+app.post("/get-task-for-file",function(req,res){ 
+      let file_path = req.body.file_path;
+      file_task_db.getTaskForFile({file_path:file_path}).then((outcome)=>{
+         res.send(outcome);
+      });
+});
+app.post("/remove-task-for-file",function(req,res){ 
+  let task_id = req.body.task_id;
+  file_task_db.removeTask({task_id:task_id}).then((outcome)=>{
+     res.send(outcome);
+  });
+});
+
+
 
 app.post("/get-json",function(req,res){ 
   let path = req.body.path;
@@ -301,6 +366,76 @@ app.post("/run-query",function(req,res){
     }
   });
 });
+
+app.post("/get-bookmarks",function(req,res){ 
+  file_task_db.getBookMarks().then((outcome)=>{
+    res.send(outcome);
+  });
+});
+
+app.post("/add-bookmarks",function(req,res){ 
+  let name = req.body.name;
+  let path = req.body.path;
+  let type = req.body.type;
+  file_task_db.addBookMarks({
+    name:name,
+    path:path,
+    type:type
+  }).then((outcome)=>{
+    res.send(outcome);
+  });
+});
+
+app.post("/remove-bookmarks",function(req,res){ 
+  let path = req.body.path;
+  file_task_db.removeBookMarks({
+    path:path
+  }).then((outcome)=>{
+    res.send(outcome);
+  });
+});
+
+app.post("/rename-bookmarks",function(req,res){
+  let name = req.body.name;
+  let path = req.body.path; 
+  file_task_db.renameBookMarks({
+    name:name,
+    path:path,
+  }).then((outcome)=>{
+    res.send(outcome);
+  });
+});
+app.post("/add-file-task",function(req,res){ 
+  let file_name = req.body.file_name;
+  let file_path = req.body.file_path;
+  let task_type = req.body.task_type;
+  let source_path = req.body.source_path;
+  let destination_path = req.body.destination_path;
+  file_task_db.addFile({
+    file_path:file_path,
+    file_name:file_name,
+  }).then((outcome)=>{
+    file_task_db.addTask({
+      task_type:task_type,
+      file_path:file_path,
+      source_path:source_path,
+      destination_path:destination_path
+    }).then((outcome)=>{
+      if(outcome.ok){
+        //
+        let directory = file_path.replace(file_name,"");
+        //put the dir on watch
+        watcher.watch({
+          only:false,
+          directory:directory
+        });
+      }
+      res.send(outcome);
+    });
+  });
+});
+
+
 function getFileStats(param, callBack) {
   fs.stat(param.path, function(err, stats) {
     if (err) {
@@ -451,13 +586,56 @@ watcher.on("stop",(args)=>{
   io.sockets.emit('wacther',{type:"stop",message:args});
 });
 watcher.on("notice",(activity)=>{
-  console.log("activity",activity);
-  io.sockets.emit('wacther',{type:"activity",message:activity});
+  console.log("activity",activity.full_path,activity);
+  file_task_db.getTaskForFile({file_path:activity.full_path}).then((outcome)=>{
+      console.log("getTaskForFile",outcome);
+      if(outcome && outcome.ok){
+        let data = outcome.ok;
+        for(let i =0; i< data.length; i++){
+          ((i)=>{
+            if(data[i].task_type ==="scp"){
+              scp_file({
+                source:data[i].source_path,
+                destination:data[i].destination_path
+              },(task)=>{
+                 if(task && task.ok){
+                    io.sockets.emit('wacther',{type:"did scp file",message:outcome});
+                 }else{
+                    io.sockets.emit('wacther',{type:"failed scp file",message:outcome});
+                 }
+              });
+            }else{
+              io.sockets.emit('wacther',{type:"got event",message:outcome});
+            }
+          })(i);
+        }
+      }else{
+        io.sockets.emit('wacther',{type:"got event",message:outcome});
+      }
+  });
 });
 server.listen(app.get("port"),()=>{
   console.log("Express started on port "+app.get("port"));
 
 });
+
+function scp_file(args,callBack){
+   let source = args.source;
+   let destination = args.destination;
+   if((source && source.trim().length>0) && (destination && destination.trim().length>0)){
+      child_process.exec(`scp ${source} ${destination}`, (err,stdout,stderr)=>{
+        if(err){
+          return callBack({err:err});
+        }else {
+          console.log("stdout",stdout);
+          console.log("stderr",stderr);
+          return callBack({ok:true});
+        }
+    });
+   }else{
+     return callBack({err:"missing or incorrect info"});
+   }
+}
 // fs.watch('/Users/lassanakonate/Desktop/questions_app',{recursive:true} ,(eventType, filename) => {
 //   console.log(`event type is: ${eventType}`);
 //   if (filename) {
