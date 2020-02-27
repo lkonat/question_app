@@ -220,7 +220,7 @@ const defined_host_name = `http://localhost:${app.get("port")}`;
 //   res.locals.showTests = app.get('env') !== 'production' && req.query.test === '1';
 //   next();
 // });
-
+//tests
 app.get('/', function(req, res) {
     res.render('home',{defined_host_name:defined_host_name});
 });
