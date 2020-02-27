@@ -179,10 +179,25 @@ class DirBrowserItem{
             document.selection.empty();
         }
     }
+    handleDrag(event){
+        event.originalEvent.dataTransfer.dropEffect = "move";
+        event.originalEvent.dataTransfer.setData("info",JSON.stringify({
+            file_name: this.name,
+            file_type:this.item_type,
+            file_path: this.full_path
+          })
+        );
+    }
     initView(){
        this.view = $(`<tr style='border:none;color:grey;border-bottom:1px solid rgb(18,20,20);white-space:nowrap;'></tr>`);
-       this.icon_view = $(`<td style='border:none; color:inherit;cursor:pointer;padding:3px;'></td>`);
-       this.title_view = $(`<td style='border:none;color:inherit;cursor:pointer;padding:3px;'>${this.name}</td>`);
+       this.icon_view = $(`<td draggable="true" style='border:none; color:inherit;cursor:pointer;padding:3px;'></td>`);
+       this.title_view = $(`<td  style='border:none;color:inherit;padding:3px;'></td>`);
+       let name_x = $(`<span draggable="true" style='color:inherit;cursor:pointer;'>${this.name}</span>`);
+       this.title_view.append(name_x)
+       name_x.on("dragstart", event => {
+         this.handleDrag(event);
+       });
+  
        this.size_view = $(`<td style='border:none;color:inherit;padding:3px;font-size:0.7em;'>${this.convertSize(this.size)}</td>`);
        this.date_view = $(`<td style='border:none;color:inherit;padding:3px;font-size:0.7em;text-align:right;'>${this.getDateStrFromTs(this.data.modified,false)}</td>`);
        this.title_view.click((e)=>{
@@ -192,107 +207,104 @@ class DirBrowserItem{
       this.title_view.contextmenu((e)=>{
             e.stopPropagation();
             e.preventDefault();
-            console.log(this);
             this.removeWindowSelection();
             let a_view = window.custome_context_menu.getView({top:e.clientY, left:e.clientX});
-            console.log(this.item_type,"0",this.item_type !== "dir");
             if(this.item_type !== "dir"){
-                console.log(this.item_type,"1");
-                a_view.addSection({
-                    name:"v-watch",
-                    on_click:()=>{
-                        window.custome_context_menu.destroy();
-                        console.log("watch file", this);
-                        $.ajax({ ////
-                            type: "POST",
-                            url:"get-task-for-file",
-                            contentType: 'application/json; charset=UTF-8',
-                            data:JSON.stringify({
-                                file_path:this.full_path /// /
-                            })
-                        }).done((res)=>{
-                            console.log("get-file-task",res);
-                            let area = window.cool_modal.getView({top:e.clientY, left:e.clientX});
-                            area.append(`<center>SCP ${this.name}</center>`);
-                            let currents_area = $(`<div style='max-height:60px; font-size:0.7em;overflow:scroll;background-color:rgb(5,7,7);'> </div>`);
-                            let task_temp ={};
-                            for(let i =0; i<res.ok.length; i++){
-                                ((i)=>{
-                                    if(!task_temp[res.ok[i].task_type]){
-                                        task_temp[res.ok[i].task_type]= $(`<div style='font-size:0.7em;'><center>Current ${res.ok[i].task_type}</center></div>`);
-                                        currents_area.append(task_temp[res.ok[i].task_type]);
-                                    }
-                                    let that_x = $(`<div style='font-size:0.7em;overflow:scroll;'>${res.ok[i].destination_path}</div>`);
-                                    let rm = $(`<span style='color:red;cursor:pointer;'> x</span>`);
-                                    that_x.append(rm);
-                                    task_temp[res.ok[i].task_type].append(that_x);
-                                    rm.click((e)=>{
-                                        e.stopPropagation();
-                                        //remove task
-                                        $.ajax({ //// 
-                                            type: "POST",
-                                            url:"remove-task-for-file",
-                                            contentType: 'application/json; charset=UTF-8',
-                                            data:JSON.stringify({
-                                                task_id:res.ok[i].task_id
-                                            })
-                                        }).done((res)=>{
-                                            if(res &&  res.ok){
-                                            that_x.remove();
-                                            }
-                                        }).fail((err)=>{
-                                            console.log("remove task",{err:err});
-                                        });
-                                    });
-                                })(i);
-                            }
+                // a_view.addSection({
+                //     name:"v-watch",
+                //     on_click:()=>{
+                //         window.custome_context_menu.destroy();
+                //         console.log("watch file", this);
+                //         $.ajax({ ////
+                //             type: "POST",
+                //             url:window.defined_host_name+"/get-task-for-file",
+                //             contentType: 'application/json; charset=UTF-8',
+                //             data:JSON.stringify({
+                //                 file_path:this.full_path /// /
+                //             })
+                //         }).done((res)=>{
+                //             console.log("get-file-task",res);
+                //             let area = window.cool_modal.getView({top:e.clientY, left:e.clientX});
+                //             area.append(`<center>SCP ${this.name}</center>`);
+                //             let currents_area = $(`<div style='max-height:60px; font-size:0.7em;overflow:scroll;background-color:rgb(5,7,7);'> </div>`);
+                //             let task_temp ={};
+                //             for(let i =0; i<res.ok.length; i++){
+                //                 ((i)=>{
+                //                     if(!task_temp[res.ok[i].task_type]){
+                //                         task_temp[res.ok[i].task_type]= $(`<div style='font-size:0.7em;'><center>Current ${res.ok[i].task_type}</center></div>`);
+                //                         currents_area.append(task_temp[res.ok[i].task_type]);
+                //                     }
+                //                     let that_x = $(`<div style='font-size:0.7em;overflow:scroll;'>${res.ok[i].destination_path}</div>`);
+                //                     let rm = $(`<span style='color:red;cursor:pointer;'> x</span>`);
+                //                     that_x.append(rm);
+                //                     task_temp[res.ok[i].task_type].append(that_x);
+                //                     rm.click((e)=>{
+                //                         e.stopPropagation();
+                //                         //remove task
+                //                         $.ajax({ //// 
+                //                             type: "POST",
+                //                             url:window.defined_host_name+"/remove-task-for-file",
+                //                             contentType: 'application/json; charset=UTF-8',
+                //                             data:JSON.stringify({
+                //                                 task_id:res.ok[i].task_id
+                //                             })
+                //                         }).done((res)=>{
+                //                             if(res &&  res.ok){
+                //                             that_x.remove();
+                //                             }
+                //                         }).fail((err)=>{
+                //                             console.log("remove task",{err:err});
+                //                         });
+                //                     });
+                //                 })(i);
+                //             }
 
-                            // {{!-- let source_area = $(`<div><center></center></div>`);
-                            // let source_area_input = $(`<textarea id="destination_area" class="md-textarea form-control" rows="3" style='background-color:rgb(5,7,7);resize: none;'></textarea>`);
-                            // let source_area_label = $(`<label for="destination_area">Source</label>`);
-                            // source_area_input.val(this.full_path);
-                            // source_area.append(source_area_label,source_area_input); --}}
+                //             // {{!-- let source_area = $(`<div><center></center></div>`);
+                //             // let source_area_input = $(`<textarea id="destination_area" class="md-textarea form-control" rows="3" style='background-color:rgb(5,7,7);resize: none;'></textarea>`);
+                //             // let source_area_label = $(`<label for="destination_area">Source</label>`);
+                //             // source_area_input.val(this.full_path);
+                //             // source_area.append(source_area_label,source_area_input); --}}
 
 
-                            let destination_area = $(`<div></div>`);
-                            let destination_input = $(`<textarea id="destination_area" class="md-textarea form-control" rows="3" style='background-color:rgb(5,7,7);resize: none;'></textarea>`);
-                            let label = $(`<label for="destination_area">Destination</label>`);
-                            let div = $(`<div></div>`);
-                            let submit_button = $(`<button type="button" class="btn btn-dark">Submit</button>`);
-                            div.append(submit_button);
-                            destination_area.append(label,destination_input,div);
-                            area.append(currents_area,destination_area);
-                            submit_button.click((e)=>{
-                                e.stopPropagation();
-                                let destination_path = destination_input.val().trim();
-                                if(destination_path){
-                                    $.ajax({ ////
-                                        type: "POST",
-                                        url:"add-file-task",
-                                        contentType: 'application/json; charset=UTF-8',
-                                        data:JSON.stringify({
-                                            file_name:this.name,
-                                            file_path:this.full_path,
-                                            task_type:"scp",
-                                            source_path:this.full_path,
-                                            destination_path:destination_path
-                                        })
-                                        }).done((res)=>{
-                                            if(res.ok){
-                                                window.cool_modal.destroy();
-                                            }
-                                            console.log("add-file-task",res);
-                                        }).fail(function(err) {
-                                            console.log("add-file-task",{err:err});
-                                        });
-                                }
-                            });
-                        }).fail(function(err) {
-                            console.log("get-file-task",{err:err});
-                        });
+                //             let destination_area = $(`<div></div>`);
+                //             let destination_input = $(`<textarea id="destination_area" class="md-textarea form-control" rows="3" style='background-color:rgb(5,7,7);resize: none;'></textarea>`);
+                //             let label = $(`<label for="destination_area">Destination</label>`);
+                //             let div = $(`<div></div>`);
+                //             let submit_button = $(`<button type="button" class="btn btn-dark">Submit</button>`);
+                //             div.append(submit_button);
+                //             destination_area.append(label,destination_input,div);
+                //             area.append(currents_area,destination_area);
+                //             submit_button.click((e)=>{
+                //                 e.stopPropagation();
+                //                 let destination_path = destination_input.val().trim();
+                //                 if(destination_path){
+                //                     $.ajax({ ////
+                //                         type: "POST",
+                //                         url:window.defined_host_name+"/add-file-task",
+                //                         contentType: 'application/json; charset=UTF-8',
+                //                         data:JSON.stringify({
+                //                             file_name:this.name,
+                //                             file_path:this.full_path,
+                //                             task_type:"scp",
+                //                             source_path:this.full_path,
+                //                             destination_path:destination_path
+                //                         })
+                //                         }).done((res)=>{
+                //                             if(res.ok){
+                //                                 window.cool_modal.destroy();
+                //                             }
+                //                             console.log("add-file-task",res);
+                //                         }).fail(function(err) {
+                //                             console.log("add-file-task",{err:err});
+                //                         });
+                //                 }
+                //             });
+                //         }).fail(function(err) {
+                //             console.log("get-file-task",{err:err});
+                //         });
         
-                    }
-                });
+                //     }
+                // });
             }
             a_view.addSection({
                 name:"+ Bookmark",
@@ -300,7 +312,7 @@ class DirBrowserItem{
                     window.custome_context_menu.destroy();
                     $.ajax({ //// 
                         type: "POST",
-                        url:"add-bookmarks",
+                        url:window.defined_host_name+"/add-bookmarks",
                         contentType:'application/json; charset=UTF-8',
                         data:JSON.stringify({
                             name:this.name,

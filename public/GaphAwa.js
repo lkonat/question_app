@@ -230,6 +230,9 @@ class GraphAwa{
         this.cEvents[what] = that;
     }
     fireEvent(what,args){
+        if(!this.cEvents){
+            this.cEvents = {}; 
+        }
         if(this.cEvents[what]){
             this.cEvents[what](args);
         }

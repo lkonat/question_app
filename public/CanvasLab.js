@@ -127,6 +127,7 @@ class CanvasClock{
            sAngle:0,
            endAngle:2* Math.PI,
            color:'white',
+           fill:'white',
            lineWidth:3
         });
        // console.log(this.ctx.measureText(seconds));

@@ -1,3 +1,105 @@
+class PivotTableBuilderFieldElt{
+    static controlers = {};
+    constructor(args){
+      this.removable = args.removable;
+      this.id = this.makeid();
+      this.in_box = args.inBox;
+      this.name = args.name;
+      this.has_checbox = args.checkbox;
+      this.host = args.host;
+      this.init();
+      let exist = this.isExit(this.name);
+      if(exist){
+        for(let i =0;i<exist.length; i++){
+            console.log(exist[i].in_box,i,"<-->", this.name,this.in_box);
+            if(this.in_box !=="filters" && exist[i].in_box && exist[i].in_box!=='fields' && exist[i].in_box!=='filters'){
+                exist[i].deleteSelf();
+            }
+        }
+      }
+      PivotTableBuilderFieldElt.save(this);
+    }
+    makeid() {
+        var text = "";
+        var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        for (var i = 0; i < 5; i++) {
+            text += possible.charAt(Math.floor(Math.random() * possible.length));
+        }
+        return new Date().getTime()+"I"+text;
+    }
+    isExit(name0){
+        let obj = false;
+        for(let id in PivotTableBuilderFieldElt.controlers){
+            if(PivotTableBuilderFieldElt.controlers[id].name ===name0){
+                if(!obj){
+                    obj = [];
+                }
+                obj.push(PivotTableBuilderFieldElt.controlers[id]);
+             }
+        }
+        return obj;
+    }
+    on(what,that){
+        if(!this.cEvents){
+            this.cEvents = {}; 
+        }
+        this.cEvents[what] = that;
+        if(what ==="delete" && this.del){
+            this.del.show();
+        }
+    }
+
+    fireEvent(what,args){
+        if(!this.cEvents){
+            this.cEvents = {}; 
+        }
+        if(this.cEvents[what]){
+            this.cEvents[what](args);
+        }
+    }
+    static delete(that) {
+        delete PivotTableBuilderFieldElt.controlers[that.id];
+        //console.log("PivotTableBuilderFieldElt.controlers",PivotTableBuilderFieldElt.controlers);
+    }
+    static save(that) {
+        PivotTableBuilderFieldElt.controlers[that.id] = that;
+        //console.log("PivotTableBuilderFieldElt.controlers",PivotTableBuilderFieldElt.controlers);
+    }
+    deleteSelf(){
+        this.view.remove();
+        PivotTableBuilderFieldElt.delete(this);
+        this.fireEvent("delete",this.name);
+    }
+    init(){
+        this.view = $(`<div style='width:100%;'></div>`);
+        this.title =$(`<span draggable="true" style='cursor:pointer;'> ${this.name}</span>`);
+        if(this.has_checbox){
+            this.checbox = $(`<input type="checkbox"></input>`);
+            this.view.append(this.checbox);
+        }
+        this.del =$(`<span style='float:right;cursor:pointer;display:none;'><i class="fa fa-times" aria-hidden="true"></i></span>`);
+        this.view.append(this.title,this.del);
+        this.host.append(this.view);
+        this.del.click((e)=>{
+            e.stopPropagation();
+            this.deleteSelf();
+        });
+        this.title.on("dragstart", event => {
+            event.originalEvent.dataTransfer.dropEffect = "move";
+            event.originalEvent.dataTransfer.setData("info",
+                JSON.stringify({
+                    filed_name:this.name
+                })
+            );
+        });
+        this.title.on("dragend", event => {
+            if(this.removable){
+               this.deleteSelf();
+            }
+        });
+
+    }
+}
 class PivotTableBuilder{
     constructor(args){
        this.host = args.host;
@@ -154,6 +256,9 @@ class PivotTableBuilder{
     }
     addToCurrent(args){
         if(args.target && args.field_name && this.currents[args.target]){
+            if(args.target !=="filters"){
+                this.currents[args.target] = {};
+            }
             this.currents[args.target][args.field_name] = true;
             this.fireEvent("currents-changed",true);
             return true;
@@ -179,14 +284,15 @@ class PivotTableBuilder{
     showCurrentFilters(){
         this.filterBoxContent.empty();
         for(let elt in this.currents.filters){
-            let one = $(`<div style='width:100%;'></div>`);
-            let title =$(`<span>${elt}</span>`);
-            let del =$(`<span style='float:right;cursor:pointer;'><i class="fa fa-times" aria-hidden="true"></i></span>`);
-            one.append(title,del);
-            this.filterBoxContent.append(one);
-            del.click((e)=>{
-              e.stopPropagation();
-              this.removeFilter(elt);
+            let controler = new PivotTableBuilderFieldElt({
+                inBox:'filters',
+                name:elt,
+                checkbox:false,
+                host:this.filterBoxContent,
+                removable:true
+            });
+            controler.on("delete",(name)=>{
+                this.removeFilter(name);
             });
         }
     }
@@ -215,15 +321,25 @@ class PivotTableBuilder{
     showCurrentColumns(){
         this.columnBoxContent.empty();
         for(let elt in this.currents.columns){
-            let one = $(`<div style='width:100%;'></div>`);
-            let title =$(`<span>${elt}</span>`);
-            let del =$(`<span style='float:right;cursor:pointer;'><i class="fa fa-times" aria-hidden="true"></i></span>`);
-            one.append(title,del);
-            this.columnBoxContent.append(one);
-            del.click((e)=>{
-              e.stopPropagation();
-              this.removeColumns(elt);
+            let controler = new PivotTableBuilderFieldElt({
+                inBox:'columns',
+                name:elt,
+                checkbox:false,
+                host:this.columnBoxContent,
+                removable:true
             });
+            controler.on("delete",(name)=>{
+                this.removeColumns(name);
+            });
+            // let one = $(`<div style='width:100%;'></div>`);
+            // let title =$(`<span>${elt}</span>`);
+            // let del =$(`<span style='float:right;cursor:pointer;'><i class="fa fa-times" aria-hidden="true"></i></span>`);
+            // one.append(title,del);
+            // this.columnBoxContent.append(one);
+            // del.click((e)=>{
+            //   e.stopPropagation();
+            //   this.removeColumns(elt);
+            // });
         }
     }
     addToColumns(filed_name){
@@ -259,15 +375,27 @@ class PivotTableBuilder{
     showCurrentRows(){
         this.rowsBoxContent.empty();
         for(let elt in this.currents.rows){
-            let one = $(`<div style='width:100%;'></div>`);
-            let title =$(`<span>${elt}</span>`);
-            let del =$(`<span style='float:right;cursor:pointer;'><i class="fa fa-times" aria-hidden="true"></i></span>`);
-            one.append(title,del);
-            this.rowsBoxContent.append(one);
-            del.click((e)=>{
-              e.stopPropagation();
-              this.removeRow(elt);
+            let controler = new PivotTableBuilderFieldElt({
+                inBox:'rows',
+                name:elt,
+                checkbox:false,
+                host:this.rowsBoxContent,
+                removable:true
             });
+            controler.on("delete",(name)=>{
+                this.removeRow(name);
+            });
+
+
+            // let one = $(`<div style='width:100%;'></div>`);
+            // let title =$(`<span>${elt}</span>`);
+            // let del =$(`<span style='float:right;cursor:pointer;'><i class="fa fa-times" aria-hidden="true"></i></span>`);
+            // one.append(title,del);
+            // this.rowsBoxContent.append(one);
+            // del.click((e)=>{
+            //   e.stopPropagation();
+            //   this.removeRow(elt);
+            // });
         }
     }
     addRowsLogic(){
@@ -295,15 +423,27 @@ class PivotTableBuilder{
     showCurrentValues(){
         this.valueBoxContent.empty();
         for(let elt in this.currents.values){
-            let one = $(`<div style='width:100%;'></div>`);
-            let title =$(`<span>${elt}</span>`);
-            let del =$(`<span style='float:right;cursor:pointer;'><i class="fa fa-times" aria-hidden="true"></i></span>`);
-            one.append(title,del);
-            this.valueBoxContent.append(one);
-            del.click((e)=>{
-              e.stopPropagation();
-              this.removeValue(elt);
+            let controler = new PivotTableBuilderFieldElt({
+                inBox:'values',
+                name:elt,
+                checkbox:false,
+                host:this.valueBoxContent,
+                removable:true
             });
+            controler.on("delete",(name)=>{
+                this.removeValue(name);
+            });
+
+
+            // let one = $(`<div style='width:100%;'></div>`);
+            // let title =$(`<span>${elt}</span>`);
+            // let del =$(`<span style='float:right;cursor:pointer;'><i class="fa fa-times" aria-hidden="true"></i></span>`);
+            // one.append(title,del);
+            // this.valueBoxContent.append(one);
+            // del.click((e)=>{
+            //   e.stopPropagation();
+            //   this.removeValue(elt);
+            // });
         }
     }
     addValuesLogic(){
@@ -324,17 +464,24 @@ class PivotTableBuilder{
     addFiedlNames(args){
       let fields = args.fields;
       let addOne = (field)=>{
-        let one = $(`<div ></div>`);
-        let title =$(`<span draggable="true" style='cursor:pointer;'> ${field.name}</span>`);
-        let checbox = $(`<input type="checkbox"></input>`);
-        one.append(checbox,title);
-        this.fieldNameEltsViewContent.append(one);
-        title.on("dragstart", event => {
-            event.originalEvent.dataTransfer.dropEffect = "move";
-            event.originalEvent.dataTransfer.setData("info",JSON.stringify({
-                filed_name: field.name
-              })
-            );
+        // let one = $(`<div ></div>`);
+        // let title =$(`<span draggable="true" style='cursor:pointer;'> ${field.name}</span>`);
+        // let checbox = $(`<input type="checkbox"></input>`);
+        // one.append(checbox,title);
+        // this.fieldNameEltsViewContent.append(one);
+        // title.on("dragstart", event => {
+        //     event.originalEvent.dataTransfer.dropEffect = "move";
+        //     event.originalEvent.dataTransfer.setData("info",JSON.stringify({
+        //         filed_name: field.name
+        //       })
+        //     );
+        // });
+        new PivotTableBuilderFieldElt({
+            inBox:'fields',
+            name:field.name,
+            checkbox:true,
+            host:this.fieldNameEltsViewContent,
+            removable:false
         });
       };
       if(args.empty){
@@ -395,12 +542,13 @@ class PivotTableBuilder{
         this.fieldNameEltsViewContent = $(`<div style='width:100%; height:100px; background-color:rgb(5,7,7);padding:2px;'></div>`);
         this.fieldNameEltsView.append(this.fieldNameEltsViewContent);
         this.div2.append(this.fieldNameEltsView);
+
         // this.div34 = $(`<div display:flex; flex-direction:row; padding:3px;></div>`);
         // this.table = $(`<table style='width:100%;'></table>`);
         // this.div34.append(this.table);
         // let table_row1 = $(`<tr style='border:none;'></tr>`);
-        // let table_row1_col1 = $(`<td style='border:none;'></td>`);
-        // let table_row1_col2 = $(`<td style='border:none;'></td>`);
+        // let table_row1_col1 = $(`<td style='border:none;'>Filter</td>`);
+        // let table_row1_col2 = $(`<td style='border:none;'>Column</td>`);
         // table_row1.append(table_row1_col1,table_row1_col2);
         // this.table.append(table_row1);
         // this.filterBox = $(`<div style='display:inline-block; width:100%;padding:3px;'><h6 style='padding-left:5px;'>Filters</h6></div>`);
