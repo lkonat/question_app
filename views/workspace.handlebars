@@ -1,19 +1,29 @@
-<script src="workspace_dir/CoolModal.js"></script>
-<script src="workspace_dir/CoolContextMenu.js"></script>
-<script src="workspace_dir/DirBrowserItem.js"></script>
-<script src="workspace_dir/DirBrowser.js"></script>
+<script src="{{defined_host_name}}/workspace_dir/CoolModal.js"></script>
+<script src="{{defined_host_name}}/workspace_dir/CoolContextMenu.js"></script>
+<script src="{{defined_host_name}}/workspace_dir/DirBrowserItem.js"></script>
+<script src="{{defined_host_name}}/workspace_dir/SqliteViewerTable.js"></script>
+<script src="{{defined_host_name}}/workspace_dir/SqliteViewer.js"></script>
+<script src="{{defined_host_name}}/workspace_dir/DirBrowser.js"></script>
+
 <script>
-    socket.on('wacther',(message)=>{
-        console.log("wacther",message);
-    });
-    
     window.cool_modal = new CoolModal();
     window.custome_context_menu = new CoolContextMenu();
     window.addEventListener("click", ()=>{
+        console.log("Window")
         if(window.custome_context_menu){
             //window.custome_context_menu.destroy();
         }
-    },true);
+    },true); //
 
-    let browser = new DirBrowser();
+    socket.on('wacther',(resp)=>{
+        if(resp.type==="did scp file"){
+            browser.fileDidScp(resp.message);
+        }
+    });
+    socket.on('ps-aux',(resp)=>{
+        console.log("ps-aux",resp);
+    });
+       let browser = new DirBrowser();
+
+
 </script>

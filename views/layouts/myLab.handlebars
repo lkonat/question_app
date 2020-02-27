@@ -7,17 +7,23 @@
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link rel="stylesheet" type="text/css" href="index.css">
+    <link rel="stylesheet" type="text/css" href="{{defined_host_name}}/index.css">
     <link rel="stylesheet" href="https://codemirror.net/addon/hint/show-hint.css">
+    <script type = "text/javascript" src="{{defined_host_name}}/SpeechClass.js"></script>
+    <script type = "text/javascript" src="{{defined_host_name}}/workspace_dir/JsonViewer.js"></script>
+    <script type = "text/javascript" src="{{defined_host_name}}/workspace_dir/TxtViewer.js"></script>
+    <script type = "text/javascript" src="{{defined_host_name}}/workspace_dir/CsvViewer.js"></script>
+    <script type = "text/javascript" src="{{defined_host_name}}/workspace_dir/ContentViewer.js"></script>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.1.4/Chart.min.js"></script>
     <script src="https://unpkg.com/docx@4.0.0/build/index.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.js"></script>
     <script src="https://code.jquery.com/jquery-2.0.2.min.js"> </script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/0.71/jquery.csv-0.71.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
-    <script src="socket.io/socket.io.js"></script>
+    <script src="{{defined_host_name}}/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script type = "text/javascript" src = "https://cdnjs.cloudflare.com/ajax/libs/d3/5.9.2/d3.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.32.0/codemirror.min.js"></script>
@@ -28,20 +34,54 @@
     <script src="https://cdn.rawgit.com/cpettitt/dagre/v0.7.4/dist/dagre.min.js"></script>
     <script src="https://cdn.rawgit.com/cytoscape/cytoscape.js-dagre/1.5.0/cytoscape-dagre.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ajv/6.10.0/ajv.min.js"></script>
+    <script src="{{defined_host_name}}/workspace_dir/CoolScreen.js"></script>
   </head>
-
   <body style="background-color: rgb(5,7,7);"> 
     <script type="text/javascript">  
-       const socket = io.connect("localhost:3000");
+    window.user_id = "{{user_id}}";
+    window.defined_host_name = "{{defined_host_name}}";
+    window.workspace_id = "{{workspace_id}}";
+    console.log(window.user_id,window.workspace_id,window);
+    console.log( window.defined_host_name);
+    window.load_script = (path)=>{
+        let nodes = document.getElementsByTagName("head")[0].childNodes;
+        for(let i =0; i< nodes.length; i++){
+            if(nodes[i].tagName && nodes[i].tagName.toLowerCase()==='script'){
+                if(nodes[i].src && nodes[i].src === path){
+                   return {ok:'already required'};
+                }
+            }
+        }
+        let script = document.createElement("SCRIPT");
+        script.scr = path;
+        script.type = "text/javascript";
+        document.getElementsByTagName("head")[0].prepend(script);
+        return true;
+    };
+       const socket = io.connect(window.defined_host_name);
+        {{!-- window.assistant = new SpeechClass({host:$("body"),name:"yuma"});
+        window.assistant.onSentence((who,sent,next)=>{
+            console.log("onSentence",sent,'w.h',who);
+            next();
+        });
+        window.assistant.on_discret_sentence((who,sent,next)=>{
+            console.log("on_discret_sentence",sent,'w.h',who);
+            next();
+        }); --}}
        socket.on('greeting',function(message) {
          console.log(message);
           socket.emit('checking', "hello server");
        });
        class Navbar{
            constructor(args){
+               console.log();
                this.host = args.host;
                this.items = {};
-               this.item_list = [{name:'Worspace',is_active:false,href:'work-space'},{name:'Features'}];
+               this.item_list = [
+                    {name:'Worspace',is_active:false,href:'/work-space'},
+                    {name:'Pivot-table',href:'/room'},
+                    {name:"Dev", href:"/workspace/dev/user/lassana"}
+                ];
                this.nav = $(`<nav class="navbar navbar-expand-lg navbar-dark bg-dark" ></nav>`);
                this.host.append(this.nav);
                this.icon = $(`<a class="navbar-brand" href="room" >Awa</a>`);
@@ -55,8 +95,8 @@
                }
            }
            add_nav_itme(args){
-               let item_li = $(`<li class="nav-item ${args.is_active?'active':''}"></li>`);
-               this.items[args.name] = $(`<a class="nav-link" href="${args.href?args.href:"#"}">${args.name} ${args.is_active?'<span class="sr-only">(current)</span>':''}</a>`);
+               let item_li = $(`<li class="nav-item ${args.is_active || location.pathname === args.href?'active':''}" style='cursor:pointer;'></li>`);
+               this.items[args.name] = $(`<a class="nav-link" href="${args.href?args.href:"#"}">${args.name} ${args.is_active || location.pathname === args.href?'<span class="sr-only">(current)</span>':''}</a>`);
                item_li.append(this.items[args.name]);
                this.ul.append(item_li);
            }
@@ -64,17 +104,12 @@
      window.navbar = new Navbar({
          host:$("body")
      });
-    // window.cool_screen = $(`<div style='width:100%; height:100%; border:3px solid red; position:fixed; top:0px; left:0px;z-index:100;'>..</div>`);
-     window.canvas = $(`<canvas width="${window.innerWidth}" height="${window.innerHeight}" style='position:fixed; top:0px; left:0px;  background-color:transparent;z-index:100;pointer-events:none;'></canvas>`);
-     $("body").append(window.canvas);
-     $(window).on("resize",()=>{
-       window.canvas.attr("height",window.innerHeight);
-       window.canvas.attr("width",window.innerWidth);
-       {{!-- window.canvas.css({
-         width:window.innerWidth,
-         height:window.innerHeight
-       }); --}}
-     });
+        window.coolScreen = new CoolScreen({host:$("body")});
+        socket.on('server-started',(resp)=>{
+            console.log("server-started");
+            location.reload();
+        });
+
     </script>
     {{{body}}}
   </body>

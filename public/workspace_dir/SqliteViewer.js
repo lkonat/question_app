@@ -71,9 +71,11 @@ class RelationshipActor{
           }
     }
 }
-class SqliteMaster{
+class SqliteViewer{
     constructor(args){
-    this.mode = args.mode;
+      this.each_table_width = 100;
+      this.each_table_height = 100;
+      this.mode = args.mode;
       this.host = args.host;
       this.c_width = window.innerWidth;
       this.c_height = window.innerHeight;
@@ -242,81 +244,35 @@ class SqliteMaster{
         svg.appendChild(newElement);
     }
     initView(){
-      this.svg = $(`<svg style='position:absolute; top:0px; left:0px; width:100%; height:100%; background-color:black;z-index:-1;'></svg>`);
-      this.main = $(`<div style='position:relative; width:${this.c_width}px; height:${ this.c_height}px; display:flex; flex-direction:row; background-color:transparent;'></div>`);
-      this.main.append(this.svg);
-      this.side = $(`<div style='width:300px; height:100%;background-color:transparent; '>Menu</div>`);
+      this.svg = $(`<svg style='position:absolute; top:0px; left:0px; width:100%; height:100%; background-color:transparent;pointer-events:none;'></svg>`);
+      this.main = $(`<div style='position:relative; width:${this.c_width}px; height:${ this.c_height}px; background-color:transparent;'></div>`);
       this.body = $(`<div style='width:${this.c_width}px; height:${this.c_height}px;background-color:transparent;overflow:scroll;'></div>`);
       this.view_port = $(`<div style='width:100%; height:100%;position:relative;background-color:transparent;overflow:auto;'></div>`);
       this.body.append(this.view_port);
-      this.main.append(this.side,this.body);
+      this.main.append(this.body,this.svg);
       this.host.append(this.main);
-      let color =`rgb(66, 245, 242)`;
-      this.cool_circle1 = new SvgCoolCircle({svg:this.svg[0],x:150, y:500, r:100, start:0, end:90,fill:'none',stroke:color,strokeWidth:'30px',speed:700});
-      this.cool_circle2 = new SvgCoolCircle({svg:this.svg[0],x:150, y:500, r:100, start:120, end:180,fill:'none',stroke:color,strokeWidth:'30px',speed:1000});
-      this.cool_circle3 = new SvgCoolCircle({svg:this.svg[0],x:150, y:500, r:100, start:200, end:230,fill:'none',stroke:color,strokeWidth:'30px',speed:1000});
-      this.cool_circle4 = new SvgCoolCircle({svg:this.svg[0],x:150, y:500, r:100, start:260, end:290,fill:'none',stroke:color,strokeWidth:'30px',speed:1000});
-      this.cool_circle5 = new SvgCoolCircle({svg:this.svg[0],x:150, y:500, r:100, start:320, end:350,fill:'none',stroke:color,strokeWidth:'30px',speed:1000});
-      this.curious_bot = new Bot({svg:this.svg,body:false,width:"100%", height:"100%",hands_color:'steelblue'});
-      this.curious_bot.move({
-        x:100,
-        y:800,
-        speed:1,
-        callBack:()=>{
-          this.curious_bot.duty();
-          setTimeout(()=>{
-            this.curious_bot.relax();
-            //this.curious_bot.sized(0.4);
-          },3000);
-       },
-      });
-      $(window).on("resize",()=>{
+
+      this.host.on("resize",()=>{
         this.resized();
         this.updateConnections();
       });
       $(this.view_port).on('scroll',()=>{
         this.updateConnections();
       });
-      $("body").mousemove((e)=>{
+      this.host.mousemove((e)=>{
+          let offset = this.main.offset();
           this.mouse={
-              x:e.clientY,
-              y:e.clientX
+              x:e.clientY - (offset.top - $(window).scrollTop()),
+              y: e.clientX - (offset.left - $(window).scrollLeft())
           };
+
          this.updateConnections();
       });
-      $("body").click((e)=>{
-        this.svgAnimateText(this.svg[0],{
-            x:e.clientX,
-            y:e.clientY,
-            text:'hello this is ads bot, i will be assisting you!',
-            fill:'steelblue',
-            class:'svgText1',
-            speed:0,
-            callBack:()=>{
-                console.log("done");
-            }
-          });
-        this.curious_bot.move({
-            x:e.clientX,
-            y:e.clientY,
-            speed:1,
-            callBack:()=>{
-                console.log("donrdfdfg");
-    
-           },
-          });
-       this.updateConnections();
-    });
+      this.host.click((e)=>{
+        this.updateConnections();
+       });
     }
-    getStruct(){
-        return {
-          name: "comment_id",
-          type: "TEXT",
-          notnull: 0,
-          dflt_value: null,
-          pk: 0
-        }
-    }
+
     svgCircleAt(args){
         let svg = this.svg[0]; //Get svg element
         let newElement = document.createElementNS("http://www.w3.org/2000/svg", 'circle'); //Create a path in SVG's namespace
@@ -329,14 +285,7 @@ class SqliteMaster{
         newElement.style.strokeWidth = args.strokeWidth; 
         svg.appendChild(newElement);
     }
-    addMenu(what,doThat){
-        this.menu_elts[what] = $(`<div style='width:100%; background-color:rgb(8,10,10);text-align:center; color:white;font-size:0.7em;cursor:pointer;'>${what}</div>`);
-        this.side.append(this.menu_elts[what]);
-        this.menu_elts[what].click((e)=>{
-           e.stopPropagation();
-           doThat();
-        });
-    }
+
     order(){
         this.current_row =-1;
         let keys = Object.keys(this.tables);
@@ -361,13 +310,15 @@ class SqliteMaster{
     }
 
     calculateNextPos(idx){
-        let per_row = Math.floor(this.body[0].clientWidth/305);
+        let left_size = this.each_table_width+15;
+        let top_size = this.each_table_height+15;
+        let per_row = Math.floor(this.body[0].clientWidth/(left_size));
         let is_nex_row = idx%per_row===0?true:false;
         if(is_nex_row){
            this.current_row ++;
         }
-        let left =((idx%per_row)*305); 
-        let top = this.current_row*300;
+        let left =((idx%per_row)*left_size)+30; 
+        let top = (this.current_row*top_size) +30;
         return {left:left+"px", top:top+"px"};
     }
     addAllTable(args){
@@ -414,24 +365,8 @@ class SqliteMaster{
                 }else{
                     return alert("could not get tables");
                 }
-                this.addMenu("New table",()=>{
-                    this.addNewTable({new:true,db:args.db_path});
-                });
-            });
-        }else{
-            this.addMenu("New table",()=>{
-                this.addNewTable({new:true});
             });
         }
-        this.addMenu("Order",()=>{
-            this.order();
-        });
-        this.addMenu("one to many",()=>{
-            this.r_actor.set('one to many');
-        });
-        this.addMenu("Tables",()=>{
-            console.log("tables",this.tables);
-        });
     }
     makeid() {
         var text = "";
@@ -536,6 +471,8 @@ class SqliteMaster{
     updateConnections(){
         $(".lines_connections").remove();
         let svg = this.svg[0];
+        let main_offset = this.main.offset();
+
         for(let elt in this.connections){
            ((elt)=>{
             let offset =  false;
@@ -565,7 +502,7 @@ class SqliteMaster{
                 middleHB = tableB.main.height()/2;
                 class_x = `lines_connections`;
             }
-            let what = this.generateCoolPath({x:offset.left+(middleWA?middleWA:0),y:offset.top-7},{x:offset2.left+(middleWB?middleWB:0),y:offset2.top-7}); //(middleHB?middleHB:0)
+            let what = this.generateCoolPath({x:(offset.left-main_offset.left)+(middleWA?middleWA:0),y:(offset.top-main_offset.top)-7},{x:(offset2.left-main_offset.left)+(middleWB?middleWB:0),y:(offset2.top-main_offset.top)-7}); //(middleHB?middleHB:0)
             let newElement = false;
             if(what.type ==="path"){
                 newElement = document.createElementNS("http://www.w3.org/2000/svg", 'path');
@@ -658,9 +595,9 @@ class SqliteMaster{
             name = `Table_${u_id}`;
         }
         let pos = this.calculateNextPos(idx);
-        this.tables[u_id] = new Table({
-           width:300,
-           height:150,
+        this.tables[u_id] = new SqliteViewerTable({
+           width:this.each_table_width,
+           height:this.each_table_height,
            id:u_id,
            is_new:args.new,
            db:args.db,
@@ -741,7 +678,7 @@ class SqliteMaster{
   runQuery(args,callBack){
     $.ajax({
         type: "POST",
-        url:"run-query",
+        url:window.defined_host_name+"/run-query",
         data:{
             path:this.database,
             query:args.query

@@ -13,6 +13,10 @@ class SpeechClass {
     this.stop = false;
     this.init();
   }
+  changeHost(args){
+    this.host = args.host;
+    this.initView();
+  }
   on(what,that){
     this.cEvents[what] = that;
   }
@@ -27,20 +31,25 @@ class SpeechClass {
       }
     }
   }
+  changeName(name){
+    this.name = name;
+    this.initView();
+  }
+  getName(name){
+    return this.name;
+  }
   handleTranslation(ev){
-   let self = this;
    let transLated = false;
    for(var i =ev.resultIndex; i<ev.results.length; i++){
      var trans = ev.results[i][0].transcript;
      let temp = trans ?trans.toLowerCase():false;
-     if(temp.split(" ").indexOf(self.name)!== -1) {
-       self.recognition.abort();
-       self.on("end",function(){
-          self.nameCalled(true);
-          self.listen();
+     if(temp.split(" ").indexOf(this.name)!== -1) {
+       this.recognition.abort();
+       this.on("end",()=>{
+          this.nameCalled(true);
+          this.listen();
        });
      }
-     //console.log("trans",trans);
      if(ev.results[i].isFinal){
        transLated =trans;
      }
@@ -59,20 +68,64 @@ class SpeechClass {
       if(this.cEvents["sentence"]){
           this.cEvents["sentence"](sentence.toLowerCase());
       }
+      this.fire_event_Sentence(sentence.toLowerCase());
     }else {
       if(this.cEvents["discret-sentence"]){
         this.cEvents["discret-sentence"](sentence.toLowerCase().trim());
-    }
+      }
+      this.fire_event_discret_sentence(sentence.toLowerCase().trim());
     }
 
   }
+  //-----
+  onSentence(that){
+    if(!this.on_envent_sentences){
+      this.on_envent_sentences= [];
+    }
+    this.on_envent_sentences.push(that);
+  }
+  fire_one(args,counter0){
+    let counter = counter0;
+    if(this.on_envent_sentences[counter]){
+      this.on_envent_sentences[counter](this.name,args,()=>{
+         this.fire_one(args,(counter+1));
+      });
+    }
+  }
+  fire_event_Sentence(args){
+    if(this.on_envent_sentences){
+      this.fire_one(args,0);
+    }
+  }
+//----
+  on_discret_sentence(that){
+    if(!this.on_envent_discret_sentences){
+      this.on_envent_discret_sentences= [];
+    }
+    this.on_envent_discret_sentences.push(that);
+  }
+  fire_discret_one(args,counter0){
+    let counter = counter0;
+    if(this.on_envent_discret_sentences[counter]){
+      this.on_envent_discret_sentences[counter](this.name,args,()=>{
+         this.fire_discret_one(args,(counter+1));
+      });
+    }
+  }
+  fire_event_discret_sentence(args){
+    if(this.on_envent_discret_sentences){
+      this.fire_discret_one(args,0);
+    }
+  }
+
+
   init(){
     let self = this;
     this.speakIt = new SpeechSynthesisUtterance();
     this.speakIt.voice = speechSynthesis.getVoices()[32];
     this.speakIt.lang= "en-US";
     this.speakIt.rate=1;
-    this.speakIt.onend= function(){
+    this.speakIt.onend= ()=>{
       self.isTalking = false;
       if(self.cEvents["doneSpeaking"]){
         self.cEvents["doneSpeaking"]();
@@ -85,12 +138,12 @@ class SpeechClass {
     this.recognition.lang ='en-US';//'en-US';'fr-FR'
     this.recognition.interimResults = true;
 
-    this.recognition.onresult = function(event) {
+    this.recognition.onresult = (event)=>{
       if(self.cEvents["onresult"]){
         self.cEvents["onresult"]();
       }
       self.handleTranslation(event);
-    }
+    };
 
     this.recognition.onboundary = function(event) {
     //  console.log('onboundary');
@@ -158,7 +211,34 @@ class SpeechClass {
       }
     }
 
-    this.actorView = $(`<div style='width:70px; height:70px; border-radius:100%; border:1px solid dodgerblue; position:absolute; top:3px; left:3px; text-align:center;line-height:70px;box-shadow: 0 0 5px #aaaaaa;'>Yuma</div>`);
+    // this.actorView = $(`<div style='width:70px; height:70px; border-radius:100%; border:1px solid dodgerblue; position:absolute; top:3px; left:3px; text-align:center;line-height:70px;box-shadow: 0 0 5px #aaaaaa;'>${this.name}</div>`);
+    // if(this.host){
+    //   this.host.append(this.actorView);
+    //   this.actorView.draggable();
+    // }
+
+    // this.speakView = $(`<div style='width:100px; height:100px; border-radius:100%; border:1px solid dodgerblue; position:absolute; top:3px; right:3px; text-align:center;line-height:100px;'>Speak</div>`);
+    // if(this.host){
+    //   this.host.append(this.speakView);
+    // }
+    // this.actorView.click(function(e){
+    //   e.stopPropagation();
+    //   self.listen();
+    // });
+    // this.speakView.click(function(e){
+    //   e.stopPropagation();
+    //   self.speak("hi");
+    // });
+    this.initView();
+  }
+  initView(){
+    if(this.actorView){
+      this.actorView.remove();
+    }
+    if(this.speakView){
+      this.speakView.remove();
+    }
+    this.actorView = $(`<div style='width:70px; height:70px; border-radius:100%; border:1px solid dodgerblue; position:absolute; top:3px; left:3px; text-align:center;line-height:70px;box-shadow: 0 0 5px #aaaaaa;'>${this.name}</div>`);
     if(this.host){
       this.host.append(this.actorView);
       this.actorView.draggable();
@@ -168,13 +248,13 @@ class SpeechClass {
     if(this.host){
       this.host.append(this.speakView);
     }
-    this.actorView.click(function(e){
+    this.actorView.click((e)=>{
       e.stopPropagation();
-      self.listen();
+      this.listen();
     });
-    this.speakView.click(function(e){
+    this.speakView.click((e)=>{
       e.stopPropagation();
-      self.speak("hi");
+      this.speak("hi");
     });
   }
   doneSpeaking(){
